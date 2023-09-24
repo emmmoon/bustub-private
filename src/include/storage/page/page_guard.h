@@ -13,7 +13,7 @@ class BasicPageGuard {
   BasicPageGuard(BufferPoolManager *bpm, Page *page) : bpm_(bpm), page_(page) {}
 
   BasicPageGuard(const BasicPageGuard &) = delete;
-  auto operator=(const BasicPageGuard &) -> BasicPageGuard & = delete;
+  auto operator=(const BasicPageGuard &) -> BasicPageGuard &;
 
   /** TODO(P1): Add implementation
    *
@@ -82,7 +82,7 @@ class BasicPageGuard {
   friend class ReadPageGuard;
   friend class WritePageGuard;
 
-  [[maybe_unused]] BufferPoolManager *bpm_{nullptr};
+  BufferPoolManager *bpm_{nullptr};
   Page *page_{nullptr};
   bool is_dirty_{false};
 };
@@ -92,7 +92,7 @@ class ReadPageGuard {
   ReadPageGuard() = default;
   ReadPageGuard(BufferPoolManager *bpm, Page *page) : guard_(bpm, page) {}
   ReadPageGuard(const ReadPageGuard &) = delete;
-  auto operator=(const ReadPageGuard &) -> ReadPageGuard & = delete;
+  auto operator=(const ReadPageGuard &) -> ReadPageGuard &;
 
   /** TODO(P1): Add implementation
    *
@@ -152,7 +152,7 @@ class WritePageGuard {
   WritePageGuard() = default;
   WritePageGuard(BufferPoolManager *bpm, Page *page) : guard_(bpm, page) {}
   WritePageGuard(const WritePageGuard &) = delete;
-  auto operator=(const WritePageGuard &) -> WritePageGuard & = delete;
+  auto operator=(const WritePageGuard &) -> WritePageGuard &;
 
   /** TODO(P1): Add implementation
    *

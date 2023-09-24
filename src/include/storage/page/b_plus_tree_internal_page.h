@@ -13,6 +13,7 @@
 #include <queue>
 #include <string>
 
+#include "common/config.h"
 #include "storage/page/b_plus_tree_page.h"
 
 namespace bustub {
@@ -47,6 +48,8 @@ class BPlusTreeInternalPage : public BPlusTreePage {
    */
   void Init(int max_size = INTERNAL_PAGE_SIZE);
 
+  auto IsSplitable() const -> bool { return GetSize() >= GetMaxSize(); }
+
   /**
    * @param index The index of the key to get. Index must be non-zero.
    * @return Key at index
@@ -72,6 +75,28 @@ class BPlusTreeInternalPage : public BPlusTreePage {
    * @return the value at the index
    */
   auto ValueAt(int index) const -> ValueType;
+
+  auto LookUp(const KeyType &key, const KeyComparator &comparator) const -> page_id_t;
+
+  auto LookUpOfDeletion(const KeyType &key, const KeyComparator &comparator, int *key_index) const -> page_id_t;
+
+  auto Insert(const KeyType &key, const KeyComparator &comparator, const page_id_t &new_page_id) -> void;
+
+  auto InsertToPosition(const KeyType &key, const page_id_t &new_page_id, const int &pos) -> void;
+
+  auto DistributeOneToRight(BPlusTreeInternalPage *rbnode) -> void;
+
+  auto DistributeOneToLeft(BPlusTreeInternalPage *lbnode) -> void;
+
+  auto CoalesceWithLeft(BPlusTreeInternalPage *lbnode) -> void;
+
+  auto DeleteInPosition(const int &pos) -> void;
+
+  auto MoveHalfTo(BPlusTreeInternalPage *new_page, page_id_t new_page_id, const bool &lite) -> void;
+
+  auto CopyFrom(MappingType *items, int size) -> void;
+
+  auto IsInsertToNewPage(const KeyType &key, const KeyComparator &comparator) const -> int;
 
   /**
    * @brief For test only, return a string representing all keys in

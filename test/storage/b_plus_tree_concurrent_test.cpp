@@ -13,6 +13,7 @@
 #include <chrono>  // NOLINT
 #include <cstdio>
 #include <functional>
+#include <string>
 #include <thread>  // NOLINT
 
 #include "buffer/buffer_pool_manager.h"
@@ -56,6 +57,26 @@ void InsertHelper(BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree, con
   }
   delete transaction;
 }
+
+// // helper function to insert
+// void InsertHelper2(BufferPoolManager * bpm, BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree, const
+// std::vector<int64_t> &keys,
+//                   __attribute__((unused)) uint64_t thread_itr = 0) {
+//   GenericKey<8> index_key;
+//   RID rid;
+//   // create transaction
+//   auto *transaction = new Transaction(0);
+//   for (auto key : keys) {
+//     int64_t value = key & 0xFFFFFFFF;
+//     rid.Set(static_cast<int32_t>(key >> 32), value);
+//     index_key.SetFromInteger(key);
+//     auto isinserted = tree->Insert(index_key, rid, transaction);
+//     if(isinserted) {
+//       tree->Draw(bpm, "test" + std::to_string(key) + ".dot");
+//     }
+//   }
+//   delete transaction;
+// }
 
 // helper function to seperate insert
 void InsertHelperSplit(BPlusTree<GenericKey<8>, RID, GenericComparator<8>> *tree, const std::vector<int64_t> &keys,
@@ -136,7 +157,7 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest1) {
   BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator);
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 100;
+  int64_t scale_factor = 280;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
@@ -183,11 +204,13 @@ TEST(BPlusTreeConcurrentTest, DISABLED_InsertTest2) {
   BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", header_page->GetPageId(), bpm, comparator);
   // keys to Insert
   std::vector<int64_t> keys;
-  int64_t scale_factor = 100;
+  int64_t scale_factor = 280;
   for (int64_t key = 1; key < scale_factor; key++) {
     keys.push_back(key);
   }
   LaunchParallelTest(2, InsertHelperSplit, &tree, keys, 2);
+
+  tree.Draw(bpm, "ConcurrentInsertTest.dot");
 
   std::vector<RID> rids;
   GenericKey<8> index_key;
@@ -336,7 +359,7 @@ TEST(BPlusTreeConcurrentTest, DISABLED_MixTest1) {
   delete bpm;
 }
 
-TEST(BPlusTreeConcurrentTest, DISABLED_MixTest2) {
+TEST(BPlusTreeConcurrentTest, MixTest2) {
   // create KeyComparator and index schema
   auto key_schema = ParseCreateStatement("a bigint");
   GenericComparator<8> comparator(key_schema.get());
@@ -350,35 +373,36 @@ TEST(BPlusTreeConcurrentTest, DISABLED_MixTest2) {
   (void)header_page;
 
   // create b+ tree
-  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", page_id, bpm, comparator);
+  BPlusTree<GenericKey<8>, RID, GenericComparator<8>> tree("foo_pk", page_id, bpm, comparator, 3, 5);
 
   // Add perserved_keys
   std::vector<int64_t> perserved_keys;
   std::vector<int64_t> dynamic_keys;
-  int64_t total_keys = 50;
-  int64_t sieve = 5;
+  int64_t total_keys = 1000;
+  int64_t sieve = 2;
   for (int64_t i = 1; i <= total_keys; i++) {
-    if (i % sieve == 0) {
-      perserved_keys.push_back(i);
-    } else {
+    if (i % sieve != 0) {
       dynamic_keys.push_back(i);
+    } else {
+      perserved_keys.push_back(i);
     }
   }
-  InsertHelper(&tree, perserved_keys, 1);
+  InsertHelper(&tree, dynamic_keys, 1);
   // Check there are 1000 keys in there
+
   size_t size;
 
-  auto insert_task = [&](int tid) { InsertHelper(&tree, dynamic_keys, tid); };
+  auto insert_task = [&](int tid) { InsertHelper(&tree, perserved_keys, tid); };
   auto delete_task = [&](int tid) { DeleteHelper(&tree, dynamic_keys, tid); };
-  auto lookup_task = [&](int tid) { LookupHelper(&tree, perserved_keys, tid); };
+  // auto lookup_task = [&](int tid) { LookupHelper(&tree, perserved_keys, tid); };
 
   std::vector<std::thread> threads;
   std::vector<std::function<void(int)>> tasks;
   tasks.emplace_back(insert_task);
   tasks.emplace_back(delete_task);
-  tasks.emplace_back(lookup_task);
+  // tasks.emplace_back(lookup_task);
 
-  size_t num_threads = 6;
+  size_t num_threads = 8;
   for (size_t i = 0; i < num_threads; i++) {
     threads.emplace_back(std::thread{tasks[i % tasks.size()], i});
   }
@@ -391,9 +415,8 @@ TEST(BPlusTreeConcurrentTest, DISABLED_MixTest2) {
 
   for (auto iter = tree.Begin(); iter != tree.End(); ++iter) {
     const auto &pair = *iter;
-    if ((pair.first).ToString() % sieve == 0) {
-      size++;
-    }
+    ASSERT_EQ((pair.first).ToString(), perserved_keys[size]);
+    size++;
   }
 
   ASSERT_EQ(size, perserved_keys.size());

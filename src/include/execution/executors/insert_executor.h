@@ -14,7 +14,9 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
+#include "concurrency/transaction.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/insert_plan.h"
@@ -49,7 +51,7 @@ class InsertExecutor : public AbstractExecutor {
    * NOTE: InsertExecutor::Next() does not use the `rid` out-parameter.
    * NOTE: InsertExecutor::Next() returns true with number of inserted rows produced only once.
    */
-  auto Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool override;
+  auto Next(Tuple *tuple, RID *rid) -> bool override;
 
   /** @return The output schema for the insert */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); };
@@ -57,6 +59,12 @@ class InsertExecutor : public AbstractExecutor {
  private:
   /** The insert plan node to be executed*/
   const InsertPlanNode *plan_;
+  const TableInfo *tableinfo_;
+  std::vector<IndexInfo *> indexinfos_;
+  const Catalog *catalog_;
+  std::unique_ptr<AbstractExecutor> child_executor_;
+  int cnt_ = 0;
+  bool out_ = false;
 };
 
 }  // namespace bustub

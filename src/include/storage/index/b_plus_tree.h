@@ -22,6 +22,7 @@
 #include "common/config.h"
 #include "common/macros.h"
 #include "concurrency/transaction.h"
+#include "nodes/parsenodes.hpp"
 #include "storage/index/index_iterator.h"
 #include "storage/page/b_plus_tree_header_page.h"
 #include "storage/page/b_plus_tree_internal_page.h"
@@ -31,6 +32,8 @@
 namespace bustub {
 
 struct PrintableBPlusTree;
+
+enum class RedistributeOrCoalesceType { LEFT_REDISTRIBUTE = 0, RIGHT_REDISTRIBUTE, LEFT_COALESCE, RIGHT_COALESCE };
 
 /**
  * @brief Definition of the Context class.
@@ -75,14 +78,38 @@ class BPlusTree {
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> bool;
 
+  auto OptimisticInsert(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> int;
+
+  // auto InsertIntoLeafPage(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> bool;
+
+  auto SplitOfInternal(InternalPage *node, int mode) -> page_id_t;
+
+  // auto SplitOfLeaf(LeafPage *node) -> page_id_t;
+
   // Remove a key and its value from this B+ tree.
   void Remove(const KeyType &key, Transaction *txn);
+
+  auto OptimisticRemove(const KeyType &key, Transaction *txn = nullptr) -> bool;
+
+  auto DeleteInRootLeaf(LeafPage *node, const KeyComparator &comparator, const KeyType &key) -> bool;
+
+  auto RedistributeOrCoalesce(InternalPage *pnode, const int &key_index) -> RedistributeOrCoalesceType;
+
+  template <typename T>
+  auto Redistribute(InternalPage *pnode, const int &key_index, T *node, RedistributeOrCoalesceType ftype) -> void;
+
+  template <typename T>
+  auto Coalesce(InternalPage *pnode, const int &key_index, T *node, RedistributeOrCoalesceType ftype) -> void;
 
   // Return the value associated with a given key
   auto GetValue(const KeyType &key, std::vector<ValueType> *result, Transaction *txn = nullptr) -> bool;
 
+  auto FindLeafPage(const KeyType &key) -> page_id_t;
+
   // Return the page id of the root node
-  auto GetRootPageId() -> page_id_t;
+  auto GetRootPageId() const -> page_id_t;
+
+  auto UpdateRootPageId(page_id_t page_id) -> void;
 
   // Index iterator
   auto Begin() -> INDEXITERATOR_TYPE;

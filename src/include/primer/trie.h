@@ -8,6 +8,7 @@
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -121,9 +122,15 @@ class Trie {
   template <class T>
   auto Put(std::string_view key, T value) const -> Trie;
 
+  template <class T>
+  auto PutDfs(const std::shared_ptr<const TrieNode> &root, std::string_view key, T value, unsigned int index) const
+      -> std::shared_ptr<TrieNode>;
+
   // Remove the key from the trie. If the key does not exist, return the original trie.
   // Otherwise, returns the new trie.
   auto Remove(std::string_view key) const -> Trie;
+  auto RemoveDfs(const std::shared_ptr<const TrieNode> &root, std::string_view key, unsigned int index) const
+      -> std::shared_ptr<TrieNode>;
 };
 
 }  // namespace bustub

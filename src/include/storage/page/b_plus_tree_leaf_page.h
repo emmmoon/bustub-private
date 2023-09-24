@@ -14,6 +14,7 @@
 #include <utility>
 #include <vector>
 
+#include "common/config.h"
 #include "storage/page/b_plus_tree_page.h"
 
 namespace bustub {
@@ -54,10 +55,34 @@ class BPlusTreeLeafPage : public BPlusTreePage {
    */
   void Init(int max_size = LEAF_PAGE_SIZE);
 
+  auto IsSplitable() const -> bool { return GetSize() >= GetMaxSize() - 1; }
+
   // helper methods
   auto GetNextPageId() const -> page_id_t;
   void SetNextPageId(page_id_t next_page_id);
   auto KeyAt(int index) const -> KeyType;
+
+  auto ValueAt(int index) const -> ValueType;
+
+  auto LookUp(const KeyType &key, const KeyComparator &comparator, ValueType &value) const -> bool;
+  auto LookUpForIndex(const KeyType &key, const KeyComparator &comparator) const -> int;
+  auto Insert(const KeyType &key, const KeyComparator &comparator, const ValueType &value) -> void;
+
+  auto InsertToPosition(const KeyType &key, const ValueType &value, const int &pos) -> void;
+
+  auto DeleteInPosition(const int &pos) -> void;
+
+  auto DistributeOneToRight(BPlusTreeLeafPage *rbnode) -> void;
+
+  auto DistributeOneToLeft(BPlusTreeLeafPage *lbnode) -> void;
+
+  auto CoalesceWithLeft(BPlusTreeLeafPage *lbnode) -> void;
+
+  auto MoveHalfTo(BPlusTreeLeafPage *new_page, const page_id_t &new_page_id) -> void;
+
+  auto CopyFrom(MappingType *items, int size) -> void;
+
+  auto Delete(const KeyType &key, const KeyComparator &comparator) -> void;
 
   /**
    * @brief for test only return a string representing all keys in

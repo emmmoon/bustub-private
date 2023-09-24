@@ -56,11 +56,15 @@ class BPlusTreePage {
   void SetMaxSize(int max_size);
   auto GetMinSize() const -> int;
 
+  auto IsUnderFlow() const -> bool { return GetSize() < GetMinSize(); }
+
+  auto CanRedistribute() const -> bool { return GetSize() > GetMinSize(); }
+
  private:
   // member variable, attributes that both internal and leaf page share
-  IndexPageType page_type_ __attribute__((__unused__));
-  int size_ __attribute__((__unused__));
-  int max_size_ __attribute__((__unused__));
+  IndexPageType page_type_;
+  int size_;
+  int max_size_;
 };
 
 }  // namespace bustub

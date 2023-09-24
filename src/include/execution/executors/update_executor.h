@@ -52,7 +52,7 @@ class UpdateExecutor : public AbstractExecutor {
    *
    * NOTE: UpdateExecutor::Next() does not use the `rid` out-parameter.
    */
-  auto Next([[maybe_unused]] Tuple *tuple, RID *rid) -> bool override;
+  auto Next(Tuple *tuple, RID *rid) -> bool override;
 
   /** @return The output schema for the update */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); }
@@ -62,7 +62,10 @@ class UpdateExecutor : public AbstractExecutor {
   const UpdatePlanNode *plan_;
   /** Metadata identifying the table that should be updated */
   const TableInfo *table_info_;
+  const Catalog *catalog_;
   /** The child executor to obtain value from */
   std::unique_ptr<AbstractExecutor> child_executor_;
+  int cnt_ = 0;
+  bool out_ = false;
 };
 }  // namespace bustub
