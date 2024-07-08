@@ -2,7 +2,6 @@
  * index_iterator.cpp
  */
 #include <cassert>
-#include <ostream>
 #include <utility>
 
 #include "buffer/buffer_pool_manager.h"

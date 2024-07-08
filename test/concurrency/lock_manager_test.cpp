@@ -2,6 +2,8 @@
  * lock_manager_test.cpp
  */
 
+#include <iostream>
+#include <ostream>
 #include <random>
 #include <thread>  // NOLINT
 
@@ -110,7 +112,7 @@ void TableLockTest1() {
     delete txns[i];
   }
 }
-TEST(LockManagerTest, DISABLED_TableLockTest1) { TableLockTest1(); }  // NOLINT
+TEST(LockManagerTest, TableLockTest1) { TableLockTest1(); }  // NOLINT
 
 /** Upgrading single transaction from S -> X */
 void TableLockUpgradeTest1() {
@@ -135,7 +137,7 @@ void TableLockUpgradeTest1() {
 
   delete txn1;
 }
-TEST(LockManagerTest, DISABLED_TableLockUpgradeTest1) { TableLockUpgradeTest1(); }  // NOLINT
+TEST(LockManagerTest, TableLockUpgradeTest1) { TableLockUpgradeTest1(); }  // NOLINT
 
 void RowLockTest1() {
   LockManager lock_mgr{};
@@ -191,7 +193,7 @@ void RowLockTest1() {
     delete txns[i];
   }
 }
-TEST(LockManagerTest, DISABLED_RowLockTest1) { RowLockTest1(); }  // NOLINT
+TEST(LockManagerTest, RowLockTest1) { RowLockTest1(); }  // NOLINT
 
 void TwoPLTest1() {
   LockManager lock_mgr{};
@@ -210,7 +212,6 @@ void TwoPLTest1() {
 
   res = lock_mgr.LockRow(txn, LockManager::LockMode::SHARED, oid, rid0);
   EXPECT_TRUE(res);
-
   CheckGrowing(txn);
   CheckTxnRowLockSize(txn, oid, 1, 0);
 
@@ -240,7 +241,7 @@ void TwoPLTest1() {
   delete txn;
 }
 
-TEST(LockManagerTest, DISABLED_TwoPLTest1) { TwoPLTest1(); }  // NOLINT
+TEST(LockManagerTest, TwoPLTest1) { TwoPLTest1(); }  // NOLINT
 
 void AbortTest1() {
   fmt::print(stderr, "AbortTest1: multiple X should block\n");
@@ -302,6 +303,6 @@ void AbortTest1() {
   delete txn3;
 }
 
-TEST(LockManagerTest, DISABLED_RowAbortTest1) { AbortTest1(); }  // NOLINT
+TEST(LockManagerTest, RowAbortTest1) { AbortTest1(); }  // NOLINT
 
 }  // namespace bustub

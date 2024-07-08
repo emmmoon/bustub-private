@@ -6,7 +6,6 @@
 #include <cstdio>
 #include <functional>
 #include <future>  // NOLINT
-#include <iostream>
 #include <thread>  // NOLINT
 
 #include "buffer/buffer_pool_manager.h"

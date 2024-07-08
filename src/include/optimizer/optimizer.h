@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -10,7 +13,11 @@
 #include "catalog/catalog.h"
 #include "concurrency/transaction.h"
 #include "execution/expressions/abstract_expression.h"
+#include "execution/expressions/comparison_expression.h"
 #include "execution/plans/abstract_plan.h"
+#include "execution/plans/aggregation_plan.h"
+#include "type/type.h"
+#include "type/value_factory.h"
 
 namespace bustub {
 
@@ -104,9 +111,81 @@ class Optimizer {
   /** Catalog will be used during the planning process. USERS SHOULD ENSURE IT OUTLIVES
    * OPTIMIZER, otherwise it's a dangling reference.
    */
+
+  auto OptimizeConstantFolder(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto ConstantFolderExpr(const AbstractExpressionRef &expr) -> AbstractExpressionRef;
+
+  auto OptimizeColumnCut(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto ColumnExprReplace(std::vector<AbstractExpressionRef> &exprs, const std::vector<AbstractExpressionRef> &sub_exprs,
+                         std::vector<uint32_t> &idxs) -> void;
+
+  auto ExprReplace(const AbstractExpressionRef &expr, const std::vector<AbstractExpressionRef> &sub_exprs,
+                   std::vector<uint32_t> &idxs) -> AbstractExpressionRef;
+
+  auto IdxsSupplyment(const AbstractExpressionRef &expr, std::vector<uint32_t> &idxs) -> void;
+
+  auto ColumnExprIdxReplace(std::vector<AbstractExpressionRef> &exprs,
+                            const std::unordered_map<uint32_t, uint32_t> &m_shorten, size_t pre_num) -> void;
+
+  auto IdxReplace(const AbstractExpressionRef &expr, const std::unordered_map<uint32_t, uint32_t> &m_shorten,
+                  size_t pre_num) -> AbstractExpressionRef;
+
+  auto EstimatedScale(const AbstractPlanNodeRef &plan) -> std::optional<size_t>;
+
+  auto OptimizeJoinOrder(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto ExchangeTableID(const AbstractExpressionRef &expr) -> AbstractExpressionRef;
+
+  auto OptimizePredicatePushDown(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto GetPushDownExprs(AbstractExpressionRef &lt_pushdown_exprs, AbstractExpressionRef &rt_pushdown_exprs,
+                        const AbstractExpressionRef &expr) -> std::optional<AbstractExpressionRef>;
+
+  auto DevideTheSameSideNLJPredicate(const AbstractExpressionRef &expr, uint32_t left_num) -> AbstractExpressionRef;
+
+  auto OptimizeAbortUselessFilter(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto OptimizeSeqToIndexScan(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef;
+
+  auto PickOutRangeFromExpr(const AbstractExpressionRef &expr, std::vector<uint32_t> &col_idxs,
+                            std::vector<Value> &range_begin, std::vector<Value> &range_end) -> AbstractExpressionRef;
+
+  auto CanConvertToIndexScan(const AbstractExpressionRef &expr) -> bool;
+
   const Catalog &catalog_;
 
   const bool force_starter_rule_;
 };
 
+struct AggregationUnit {
+  AggregationType type_;
+  uint32_t cid_;
+
+  auto operator==(const AggregationUnit &other) const -> bool { return type_ == other.type_ && cid_ == other.cid_; }
+};
+
 }  // namespace bustub
+
+namespace std {
+
+/** Implements std::hash on AggregateKey */
+template <>
+struct hash<bustub::AggregationUnit> {
+  auto operator()(const bustub::AggregationUnit &agg_unit) const -> std::size_t {
+    size_t curr_hash = 0;
+    // for (const auto &key : agg_key.group_bys_) {
+    //   if (!key.IsNull()) {
+    //     curr_hash = bustub::HashUtil::CombineHashes(curr_hash, bustub::HashUtil::HashValue(&key));
+    //   }
+    // }
+    auto agg_type = bustub::ValueFactory::GetIntegerValue(static_cast<uint32_t>(agg_unit.type_));
+    auto agg_cid = bustub::ValueFactory::GetIntegerValue(agg_unit.cid_);
+    curr_hash = bustub::HashUtil::CombineHashes(curr_hash, bustub::HashUtil::HashValue(&agg_type));
+    curr_hash = bustub::HashUtil::CombineHashes(curr_hash, bustub::HashUtil::HashValue(&agg_cid));
+    return curr_hash;
+  }
+};
+
+}  // namespace std

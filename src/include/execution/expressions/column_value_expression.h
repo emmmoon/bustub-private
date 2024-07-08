@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
@@ -47,6 +48,10 @@ class ColumnValueExpression : public AbstractExpression {
 
   auto GetTupleIdx() const -> uint32_t { return tuple_idx_; }
   auto GetColIdx() const -> uint32_t { return col_idx_; }
+
+  auto InvertTuleIdx() -> void { tuple_idx_ = (tuple_idx_ == 1 ? 0 : 1); }
+
+  auto ModifyColIdx(uint32_t offset) -> void { col_idx_ = col_idx_ + offset; }
 
   /** @return the string representation of the plan node and its children */
   auto ToString() const -> std::string override { return fmt::format("#{}.{}", tuple_idx_, col_idx_); }

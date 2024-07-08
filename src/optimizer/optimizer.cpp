@@ -9,10 +9,15 @@ auto Optimizer::Optimize(const AbstractPlanNodeRef &plan) -> AbstractPlanNodeRef
   if (force_starter_rule_) {
     // Use starter rules when `force_starter_rule_` is set to true.
     auto p = plan;
+    p = OptimizeConstantFolder(p);
     p = OptimizeMergeProjection(p);
+    // p = OptimizeMergeFilterScan(p);
     p = OptimizeMergeFilterNLJ(p);
+    p = OptimizeJoinOrder(p);
+    p = OptimizePredicatePushDown(p);
     p = OptimizeOrderByAsIndexScan(p);
     p = OptimizeSortLimitAsTopN(p);
+    p = OptimizeColumnCut(p);
     return p;
   }
   // By default, use user-defined rules.

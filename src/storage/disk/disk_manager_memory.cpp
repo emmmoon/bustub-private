@@ -13,9 +13,7 @@
 #include "storage/disk/disk_manager_memory.h"
 
 #include <cassert>
-#include <cstddef>
 #include <cstring>
-#include <iostream>
 #include <string>
 #include <thread>  // NOLINT
 

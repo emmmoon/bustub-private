@@ -1,6 +1,5 @@
 #include "execution/executors/sort_executor.h"
 #include <algorithm>
-#include <iostream>
 #include "binder/bound_order_by.h"
 #include "common/rid.h"
 #include "storage/table/tuple.h"

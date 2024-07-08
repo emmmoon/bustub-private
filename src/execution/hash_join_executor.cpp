@@ -11,7 +11,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/hash_join_executor.h"
-#include <iostream>
 #include <utility>
 #include "common/rid.h"
 #include "storage/table/tuple.h"

@@ -16,9 +16,11 @@
 #include <vector>
 
 #include "catalog/catalog.h"
+#include "concurrency/lock_manager.h"
 #include "concurrency/transaction.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
+#include "execution/expressions/abstract_expression.h"
 #include "execution/plans/seq_scan_plan.h"
 #include "storage/table/tuple.h"
 
@@ -55,6 +57,13 @@ class SeqScanExecutor : public AbstractExecutor {
   const SeqScanPlanNode *plan_;
   const TableInfo *tableinfo_;
   const Catalog *catalog_;
+  AbstractExpressionRef predicate_;
   std::shared_ptr<TableIterator> iter_;
+  LockManager *lock_mgr_;
+  Transaction *txn_;
+  bool ctx_is_deleted_;
+  table_oid_t oid_;
+  bool table_has_locked_ = false;
+  bool out_ = false;
 };
 }  // namespace bustub

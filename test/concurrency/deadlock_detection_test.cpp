@@ -3,16 +3,19 @@
  */
 
 #include <atomic>
+#include <iostream>
+#include <iterator>
 #include <random>
 #include <thread>  // NOLINT
 
 #include "common/config.h"
 #include "concurrency/lock_manager.h"
 #include "concurrency/transaction_manager.h"
+#include "fmt/core.h"
 #include "gtest/gtest.h"
 
 namespace bustub {
-TEST(LockManagerDeadlockDetectionTest, DISABLED_EdgeTest) {
+TEST(LockManagerDeadlockDetectionTest, EdgeTest) {
   LockManager lock_mgr{};
 
   const int num_nodes = 100;
@@ -54,9 +57,11 @@ TEST(LockManagerDeadlockDetectionTest, DISABLED_EdgeTest) {
   }
 }
 
-TEST(LockManagerDeadlockDetectionTest, DISABLED_BasicDeadlockDetectionTest) {
+TEST(LockManagerDeadlockDetectionTest, BasicDeadlockDetectionTest) {
   LockManager lock_mgr{};
   TransactionManager txn_mgr{&lock_mgr};
+  lock_mgr.txn_manager_ = &txn_mgr;
+  lock_mgr.StartDeadlockDetection();
 
   table_oid_t toid{0};
   RID rid0{0, 0};

@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "concurrency/lock_manager.h"
 #include "concurrency/transaction.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
@@ -61,8 +62,10 @@ class InsertExecutor : public AbstractExecutor {
   const InsertPlanNode *plan_;
   const TableInfo *tableinfo_;
   std::vector<IndexInfo *> indexinfos_;
-  const Catalog *catalog_;
+  Catalog *catalog_;
   std::unique_ptr<AbstractExecutor> child_executor_;
+  LockManager *lock_mgr_;
+  Transaction *txn_;
   int cnt_ = 0;
   bool out_ = false;
 };

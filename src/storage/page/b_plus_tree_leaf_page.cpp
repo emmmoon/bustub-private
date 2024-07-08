@@ -10,8 +10,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <algorithm>
-#include <iostream>
-#include <sstream>
 #include <utility>
 
 #include "buffer/buffer_pool_manager.h"

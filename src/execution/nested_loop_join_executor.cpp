@@ -11,10 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "execution/executors/nested_loop_join_executor.h"
-#include <cmath>
-#include <iostream>
 #include <iterator>
-#include <ostream>
 #include <utility>
 #include "binder/table_ref/bound_join_ref.h"
 #include "common/config.h"

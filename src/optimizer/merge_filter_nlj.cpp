@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <memory>
+#include "binder/table_ref/bound_join_ref.h"
 #include "catalog/column.h"
 #include "catalog/schema.h"
 #include "common/exception.h"
@@ -60,7 +61,7 @@ auto Optimizer::OptimizeMergeFilterNLJ(const AbstractPlanNodeRef &plan) -> Abstr
       // Has exactly two children
       BUSTUB_ENSURE(child_plan->GetChildren().size() == 2, "NLJ should have exactly 2 children.");
 
-      if (IsPredicateTrue(nlj_plan.Predicate())) {
+      if (IsPredicateTrue(nlj_plan.Predicate()) && nlj_plan.join_type_ == JoinType::INNER) {
         // Only rewrite when NLJ has always true predicate.
         return std::make_shared<NestedLoopJoinPlanNode>(
             filter_plan.output_schema_, nlj_plan.GetLeftPlan(), nlj_plan.GetRightPlan(),

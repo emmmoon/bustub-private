@@ -15,10 +15,14 @@
 #include <vector>
 
 #include "catalog/catalog.h"
+#include "catalog/column.h"
+#include "catalog/schema.h"
 #include "common/rid.h"
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
+#include "execution/expressions/abstract_expression.h"
 #include "execution/plans/index_scan_plan.h"
+#include "storage/index/b_plus_tree_index.h"
 #include "storage/table/tuple.h"
 
 namespace bustub {
@@ -49,6 +53,10 @@ class IndexScanExecutor : public AbstractExecutor {
   IndexInfo *index_info_;
   TableInfo *table_info_;
   BPlusTreeIndexForTwoIntegerColumn *tree_;
+  AbstractExpressionRef filter_predicate_;
+  Schema key_schema_{std::vector<Column>{}};
+  bool convert_from_seq_ = false;
   BPlusTreeIndexIteratorForTwoIntegerColumn iter_{nullptr, -1, -1};
+  BPlusTreeIndexIteratorForTwoIntegerColumn iter_end_{nullptr, -1, -1};
 };
 }  // namespace bustub

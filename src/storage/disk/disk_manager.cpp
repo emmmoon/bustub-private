@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <cassert>
 #include <cstring>
-#include <iostream>
 #include <mutex>  // NOLINT
 #include <string>
 #include <thread>  // NOLINT

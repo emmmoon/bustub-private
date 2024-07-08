@@ -78,8 +78,6 @@ class BPlusTree {
   // Insert a key-value pair into this B+ tree.
   auto Insert(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> bool;
 
-  auto OptimisticInsert(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> int;
-
   // auto InsertIntoLeafPage(const KeyType &key, const ValueType &value, Transaction *txn = nullptr) -> bool;
 
   auto SplitOfInternal(InternalPage *node, int mode) -> page_id_t;
@@ -88,8 +86,6 @@ class BPlusTree {
 
   // Remove a key and its value from this B+ tree.
   void Remove(const KeyType &key, Transaction *txn);
-
-  auto OptimisticRemove(const KeyType &key, Transaction *txn = nullptr) -> bool;
 
   auto DeleteInRootLeaf(LeafPage *node, const KeyComparator &comparator, const KeyType &key) -> bool;
 

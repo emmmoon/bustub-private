@@ -10,9 +10,6 @@
 //===----------------------------------------------------------------------===//
 
 #include <algorithm>
-#include <iostream>
-#include <ostream>
-#include <sstream>
 #include <utility>
 
 #include "common/config.h"

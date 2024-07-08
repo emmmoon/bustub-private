@@ -1,12 +1,18 @@
 #include <memory>
 #include <vector>
+#include "catalog/column.h"
+#include "catalog/schema.h"
+#include "execution/expressions/column_value_expression.h"
+#include "execution/expressions/constant_value_expression.h"
 #include "execution/plans/filter_plan.h"
 #include "execution/plans/limit_plan.h"
 #include "execution/plans/seq_scan_plan.h"
 #include "execution/plans/sort_plan.h"
 #include "execution/plans/topn_plan.h"
 
+#include "execution/plans/values_plan.h"
 #include "optimizer/optimizer.h"
+#include "type/value.h"
 
 namespace bustub {
 
