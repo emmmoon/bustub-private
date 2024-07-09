@@ -280,7 +280,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       auto new_lr_iter = lrq_p->request_queue_.insert(next_lr_iter, new_lr);
 
       txn->GetSharedRowLockSet()->at(oid).erase(rid);
-      txn->GetSharedLockSet()->erase(rid);
 
       lrq_p->cv_.wait(queue_lock, [&]() {
         return txn->GetState() == TransactionState::ABORTED || lrq_p->CheckCompatibilityOfRow(new_lr_iter);
@@ -296,7 +295,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       lrq_p->upgrading_ = INVALID_TXN_ID;
 
       txn->GetExclusiveRowLockSet()->at(oid).insert(rid);
-      txn->GetExclusiveLockSet()->insert(rid);
 
       return true;
     }
@@ -346,7 +344,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       } else {
         txn->GetSharedRowLockSet()->emplace(oid, std::unordered_set<RID>{rid});
       }
-      txn->GetSharedLockSet()->insert(rid);
     } else {
       const auto &exclusive_row_lock_set = txn->GetExclusiveRowLockSet();
       if (exclusive_row_lock_set->find(oid) != exclusive_row_lock_set->end()) {
@@ -354,7 +351,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       } else {
         txn->GetExclusiveRowLockSet()->emplace(oid, std::unordered_set<RID>{rid});
       }
-      txn->GetExclusiveLockSet()->insert(rid);
     }
 
     return true;
@@ -397,10 +393,8 @@ auto LockManager::UnlockRow(Transaction *txn, const table_oid_t &oid, const RID 
     }
     if (row_lock_mode.value() == LockMode::SHARED) {
       txn->GetSharedRowLockSet()->at(oid).erase(rid);
-      txn->GetSharedLockSet()->erase(rid);
     } else {
       txn->GetExclusiveRowLockSet()->at(oid).erase(rid);
-      txn->GetExclusiveLockSet()->erase(rid);
     }
     return true;
   }
