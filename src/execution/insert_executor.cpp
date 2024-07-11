@@ -40,8 +40,8 @@ void InsertExecutor::Init() {
     if (!result) {
       throw ExecutionException("Insert IX lock table return false. cannot get the table lock");
     }
-  } catch (const TransactionAbortException &exception) {
-    throw ExecutionException(exception.what());
+  } catch (TransactionAbortException &exception) {
+    throw ExecutionException(exception.GetInfo());
   }
 }
 
@@ -52,7 +52,9 @@ auto InsertExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   while (child_executor_->Next(tuple, rid)) {
     TupleMeta tm{txn_->GetTransactionId(), INVALID_TXN_ID, false};
     try {
-      RID ridi = (tableinfo_->table_->InsertTuple(tm, *tuple)).value();
+      RID ridi = (tableinfo_->table_->InsertTuple(tm, *tuple, exec_ctx_->GetLockManager(), exec_ctx_->GetTransaction(),
+                                                  tableinfo_->oid_))
+                     .value();
       auto insert_table_record = TableWriteRecord{tableinfo_->oid_, ridi, tableinfo_->table_.get()};
       insert_table_record.wtype_ = WType::INSERT;
       txn_->AppendTableWriteRecord(insert_table_record);
@@ -65,8 +67,8 @@ auto InsertExecutor::Next(Tuple *tuple, RID *rid) -> bool {
         txn_->AppendIndexWriteRecord(insert_index_record);
       }
       ++cnt_;
-    } catch (const TransactionAbortException &exception) {
-      throw ExecutionException(exception.what());
+    } catch (TransactionAbortException &exception) {
+      throw ExecutionException(exception.GetInfo());
     }
   }
   out_ = true;

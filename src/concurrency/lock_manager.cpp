@@ -12,6 +12,7 @@
 
 #include "concurrency/lock_manager.h"
 #include <algorithm>
+#include <iterator>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
@@ -32,11 +33,7 @@ namespace bustub {
 auto LockManager::LockTable(Transaction *txn, LockMode lock_mode, const table_oid_t &oid) -> bool {
   auto old_lock_mode = IsTableLocked(txn, oid);
   if (old_lock_mode.has_value()) {
-    if (old_lock_mode == lock_mode ||
-        (old_lock_mode == LockMode::INTENTION_EXCLUSIVE &&
-         (lock_mode == LockMode::INTENTION_SHARED || lock_mode == LockMode::SHARED)) ||
-        (old_lock_mode == LockMode::EXCLUSIVE &&
-         (lock_mode == LockMode::INTENTION_SHARED || lock_mode == LockMode::SHARED))) {
+    if (old_lock_mode == lock_mode) {
       return true;
     }
   }
@@ -88,7 +85,6 @@ auto LockManager::LockTable(Transaction *txn, LockMode lock_mode, const table_oi
           lrq_p->cv_.notify_all();
           return false;
         }
-
         (*new_lr_iter)->granted_ = true;
         lrq_p->upgrading_ = INVALID_TXN_ID;
 
@@ -175,12 +171,19 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       lock_mode == LockMode::INTENTION_SHARED) {
     AbortAndThrowException(txn, AbortReason::ATTEMPTED_INTENTION_LOCK_ON_ROW);
   }
-  auto old_lock_mode = IsRowLocked(txn, oid, rid);
-  if (old_lock_mode.has_value()) {
-    if (old_lock_mode == lock_mode || lock_mode == LockMode::SHARED) {
-      return true;
+  if (lock_mode == LockMode::SHARED) {
+    if (!IsTableLocked(txn, oid).has_value()) {
+      AbortAndThrowException(txn, AbortReason::TABLE_LOCK_NOT_PRESENT);
+    }
+  } else {
+    auto table_lock_mode = IsTableLocked(txn, oid);
+    if (!table_lock_mode.has_value() ||
+        (table_lock_mode.value() != LockMode::INTENTION_EXCLUSIVE && table_lock_mode.value() != LockMode::EXCLUSIVE &&
+         table_lock_mode.value() != LockMode::SHARED_INTENTION_EXCLUSIVE)) {
+      AbortAndThrowException(txn, AbortReason::TABLE_LOCK_NOT_PRESENT);
     }
   }
+  auto old_lock_mode = IsRowLocked(txn, oid, rid);
   if (CanTxnTakeLock(txn, lock_mode)) {
     auto txn_id = txn->GetTransactionId();
     row_lock_map_latch_.lock();
@@ -192,14 +195,14 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
     std::unique_lock<std::mutex> queue_lock(lrq_p->latch_);
     row_lock_map_latch_.unlock();
     if (old_lock_mode.has_value()) {
-      auto table_lock_mode = IsTableLocked(txn, oid);
-      if (!table_lock_mode.has_value() ||
-          (table_lock_mode.value() != LockMode::INTENTION_EXCLUSIVE && table_lock_mode.value() != LockMode::EXCLUSIVE &&
-           table_lock_mode.value() != LockMode::SHARED_INTENTION_EXCLUSIVE)) {
-        AbortAndThrowException(txn, AbortReason::TABLE_LOCK_NOT_PRESENT);
+      if (old_lock_mode == lock_mode) {
+        return true;
       }
       if (lrq_p->upgrading_ != INVALID_TXN_ID) {
         AbortAndThrowException(txn, AbortReason::UPGRADE_CONFLICT);
+      }
+      if (old_lock_mode.value() == LockMode::EXCLUSIVE && lock_mode == LockMode::SHARED) {
+        AbortAndThrowException(txn, AbortReason::INCOMPATIBLE_UPGRADE);
       }
       txn_variant_map_latch_.lock();
       txn_variant_map_[txn_id] = rid;
@@ -238,18 +241,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
 
       return true;
     }
-    if (lock_mode == LockMode::SHARED) {
-      if (!IsTableLocked(txn, oid).has_value()) {
-        AbortAndThrowException(txn, AbortReason::TABLE_LOCK_NOT_PRESENT);
-      }
-    } else {
-      auto table_lock_mode = IsTableLocked(txn, oid);
-      if (!table_lock_mode.has_value() ||
-          (table_lock_mode.value() != LockMode::INTENTION_EXCLUSIVE && table_lock_mode.value() != LockMode::EXCLUSIVE &&
-           table_lock_mode.value() != LockMode::SHARED_INTENTION_EXCLUSIVE)) {
-        AbortAndThrowException(txn, AbortReason::TABLE_LOCK_NOT_PRESENT);
-      }
-    }
     txn_variant_map_latch_.lock();
     txn_variant_map_[txn_id] = rid;
     txn_variant_map_latch_.unlock();
@@ -283,7 +274,6 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
         txn->GetExclusiveRowLockSet()->emplace(oid, std::unordered_set<RID>{rid});
       }
     }
-
     return true;
   }
   return false;
@@ -455,6 +445,10 @@ auto LockManager::LockRequestQueue::CheckCompatibility(
 auto LockManager::LockRequestQueue::CheckCompatibilityOfRow(
     std::list<std::shared_ptr<LockRequest>>::iterator lock_request_iter) -> bool {
   BUSTUB_ASSERT(lock_request_iter != request_queue_.end(), "lock request iterator cannot be the end of queue");
+  if (request_queue_.size() > 1 && (*lock_request_iter)->lock_mode_ == LockMode::EXCLUSIVE &&
+      lock_request_iter != request_queue_.begin()) {
+    return false;
+  }
   ++lock_request_iter;
 
   auto has_exclusive = false;
@@ -635,6 +629,8 @@ void LockManager::RunCycleDetection() {
   while (enable_cycle_detection_) {
     std::this_thread::sleep_for(cycle_detection_interval);
     {
+      waits_for_.clear();
+      waits_.clear();
       GenerateTableEdges();
       GenerateRowEdges();
 
@@ -666,8 +662,6 @@ void LockManager::RunCycleDetection() {
 }
 
 void LockManager::GenerateTableEdges() {
-  waits_for_.clear();
-  waits_.clear();
   table_lock_map_latch_.lock();
   for (const auto &item : table_lock_map_) {
     std::vector<txn_id_t> granted;

@@ -73,6 +73,10 @@ TEST(VisibilityTest, TestC) {
 TEST(IsolationLevelTest, InsertTestA) {
   ExpectTwoTxn("InsertTestA.1", IsolationLevel::READ_UNCOMMITTED, IsolationLevel::READ_UNCOMMITTED, false, IS_INSERT,
                ExpectedOutcome::DirtyRead);
+  ExpectTwoTxn("InsertTestA.2", IsolationLevel::READ_COMMITTED, IsolationLevel::READ_UNCOMMITTED, false, IS_INSERT,
+               ExpectedOutcome::BlockOnRead);
+  ExpectTwoTxn("InsertTestA.3", IsolationLevel::READ_COMMITTED, IsolationLevel::READ_COMMITTED, false, IS_INSERT,
+               ExpectedOutcome::BlockOnRead);
 }
 
 TEST(IsolationLevelTest, DeleteTestA) {
