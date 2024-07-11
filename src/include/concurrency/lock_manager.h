@@ -338,6 +338,10 @@ class LockManager {
   auto CheckAppropriateLockOnTable(Transaction *txn, const table_oid_t &oid, LockMode row_lock_mode) -> bool;
   auto FindCycle(txn_id_t source_txn, std::vector<txn_id_t> &path, std::unordered_set<txn_id_t> &on_path,
                  std::unordered_set<txn_id_t> &visited, txn_id_t *abort_txn_id) -> bool;
+  void InsertTableLockSet(Transaction *txn, LockMode lock_mode, table_oid_t oid);
+  void DeleteTableLockSet(Transaction *txn, LockMode lock_mode, table_oid_t oid);
+  void InsertRowLockSet(Transaction *txn, LockMode lockmode);
+  void DeleteRowLockSet(Transaction *txn, LockMode lockmode);
   void UnlockAll();
 
   /** Structure that holds lock requests for a given table oid */

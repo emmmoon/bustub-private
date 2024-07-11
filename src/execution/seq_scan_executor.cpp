@@ -25,33 +25,31 @@ void SeqScanExecutor::Init() {
   txn_ = exec_ctx_->GetTransaction();
   ctx_is_deleted_ = exec_ctx_->IsDelete();
   oid_ = plan_->GetTableOid();
-  if (txn_->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED) {
-    auto old_lock_mode = lock_mgr_->IsTableLocked(txn_, oid_);
-    if (old_lock_mode.has_value()) {
-      if (old_lock_mode.value() == LockManager::LockMode::INTENTION_EXCLUSIVE ||
-          old_lock_mode.value() == LockManager::LockMode::EXCLUSIVE) {
-        table_has_locked_ = true;
-      }
+  auto old_lock_mode = lock_mgr_->IsTableLocked(txn_, oid_);
+  if (old_lock_mode.has_value()) {
+    if (old_lock_mode.value() == LockManager::LockMode::INTENTION_EXCLUSIVE ||
+        old_lock_mode.value() == LockManager::LockMode::EXCLUSIVE) {
+      table_has_locked_ = true;
     }
-    if (!table_has_locked_) {
-      if (ctx_is_deleted_) {
-        try {
-          auto result = lock_mgr_->LockTable(txn_, LockManager::LockMode::INTENTION_EXCLUSIVE, oid_);
-          if (!result) {
-            throw ExecutionException("X lock table return false. cannot get the table lock");
-          }
-        } catch (TransactionAbortException &exception) {
-          throw ExecutionException(exception.GetInfo());
+  }
+  if (!table_has_locked_) {
+    if (ctx_is_deleted_) {
+      try {
+        auto result = lock_mgr_->LockTable(txn_, LockManager::LockMode::INTENTION_EXCLUSIVE, oid_);
+        if (!result) {
+          throw ExecutionException("X lock table return false. cannot get the table lock");
         }
-      } else {
-        try {
-          auto result = lock_mgr_->LockTable(txn_, LockManager::LockMode::INTENTION_SHARED, oid_);
-          if (!result) {
-            throw ExecutionException("IS lock table return false. cannot get the table lock");
-          }
-        } catch (TransactionAbortException &exception) {
-          throw ExecutionException(exception.GetInfo());
+      } catch (TransactionAbortException &exception) {
+        throw ExecutionException(exception.GetInfo());
+      }
+    } else if (txn_->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED) {
+      try {
+        auto result = lock_mgr_->LockTable(txn_, LockManager::LockMode::INTENTION_SHARED, oid_);
+        if (!result) {
+          throw ExecutionException("IS lock table return false. cannot get the table lock");
         }
+      } catch (TransactionAbortException &exception) {
+        throw ExecutionException(exception.GetInfo());
       }
     }
   }
@@ -65,32 +63,30 @@ auto SeqScanExecutor::Next(Tuple *tuple, RID *rid) -> bool {
   while (!iter_->IsEnd()) {
     *rid = iter_->GetRID();
     bool row_has_locked = false;
-    if (txn_->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED) {
-      auto old_lock_mode = lock_mgr_->IsRowLocked(txn_, oid_, *rid);
-      if (old_lock_mode.has_value()) {
-        if (old_lock_mode.value() == LockManager::LockMode::EXCLUSIVE) {
-          row_has_locked = true;
-        }
+    auto old_lock_mode = lock_mgr_->IsRowLocked(txn_, oid_, *rid);
+    if (old_lock_mode.has_value()) {
+      if (old_lock_mode.value() == LockManager::LockMode::EXCLUSIVE) {
+        row_has_locked = true;
       }
-      if (!row_has_locked) {
-        if (ctx_is_deleted_) {
-          try {
-            auto result = lock_mgr_->LockRow(txn_, LockManager::LockMode::EXCLUSIVE, oid_, *rid);
-            if (!result) {
-              throw ExecutionException("X lock row return false. cannot get the row lock");
-            }
-          } catch (TransactionAbortException &exception) {
-            throw ExecutionException(exception.GetInfo());
+    }
+    if (!row_has_locked) {
+      if (ctx_is_deleted_) {
+        try {
+          auto result = lock_mgr_->LockRow(txn_, LockManager::LockMode::EXCLUSIVE, oid_, *rid);
+          if (!result) {
+            throw ExecutionException("X lock row return false. cannot get the row lock");
           }
-        } else {
-          try {
-            auto result = lock_mgr_->LockRow(txn_, LockManager::LockMode::SHARED, oid_, *rid);
-            if (!result) {
-              throw ExecutionException("S lock row return false. cannot get the row lock");
-            }
-          } catch (TransactionAbortException &exception) {
-            throw ExecutionException(exception.GetInfo());
+        } catch (TransactionAbortException &exception) {
+          throw ExecutionException(exception.GetInfo());
+        }
+      } else if (txn_->GetIsolationLevel() != IsolationLevel::READ_UNCOMMITTED) {
+        try {
+          auto result = lock_mgr_->LockRow(txn_, LockManager::LockMode::SHARED, oid_, *rid);
+          if (!result) {
+            throw ExecutionException("S lock row return false. cannot get the row lock");
           }
+        } catch (TransactionAbortException &exception) {
+          throw ExecutionException(exception.GetInfo());
         }
       }
     }

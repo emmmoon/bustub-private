@@ -265,7 +265,6 @@ void ExpectTwoTxn(const std::string &test_name, IsolationLevel read_txn_level, I
     case ExpectedOutcome::BlockOnRead:
       // TODO(student): if you are using a debugger, you probably want to uncomment this line.
       // future.wait();
-
       EXPECT_FALSE(future.wait_for(std::chrono::seconds(1)) == std::future_status::ready);
       instance->txn_manager_->Commit(txn_w);
       delete txn_w;
@@ -275,7 +274,6 @@ void ExpectTwoTxn(const std::string &test_name, IsolationLevel read_txn_level, I
     case ExpectedOutcome::BlockOnWrite:
       // TODO(student): if you are using a debugger, you probably want to uncomment this line.
       // future.wait();
-
       EXPECT_FALSE(future.wait_for(std::chrono::seconds(1)) == std::future_status::ready);
       instance->txn_manager_->Commit(txn_r);
       delete txn_r;
