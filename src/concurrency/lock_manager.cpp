@@ -237,7 +237,12 @@ auto LockManager::LockRow(Transaction *txn, LockMode lock_mode, const table_oid_
       (*new_lr_iter)->granted_ = true;
       lrq_p->upgrading_ = INVALID_TXN_ID;
 
-      txn->GetExclusiveRowLockSet()->at(oid).insert(rid);
+      const auto &exclusive_row_lock_set = txn->GetExclusiveRowLockSet();
+      if (exclusive_row_lock_set->find(oid) != exclusive_row_lock_set->end()) {
+        txn->GetExclusiveRowLockSet()->at(oid).insert(rid);
+      } else {
+        txn->GetExclusiveRowLockSet()->emplace(oid, std::unordered_set<RID>{rid});
+      }
 
       return true;
     }

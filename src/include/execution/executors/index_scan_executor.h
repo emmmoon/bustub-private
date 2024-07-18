@@ -58,5 +58,12 @@ class IndexScanExecutor : public AbstractExecutor {
   bool convert_from_seq_ = false;
   BPlusTreeIndexIteratorForTwoIntegerColumn iter_{nullptr, -1, -1};
   BPlusTreeIndexIteratorForTwoIntegerColumn iter_end_{nullptr, -1, -1};
+  bool single_index_equality_{false};
+  LockManager *lock_mgr_{nullptr};
+  Transaction *txn_{nullptr};
+  bool ctx_is_deleted_{false};
+  table_oid_t oid_{0};
+  bool out_{false};
+  bool table_has_locked_{false};
 };
 }  // namespace bustub

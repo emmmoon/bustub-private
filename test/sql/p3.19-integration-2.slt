@@ -61,7 +61,9 @@ INSERT INTO tmp SELECT * FROM (
 90
 
 statement ok
-INSERT INTO result SELECT * FROM tmp; DELETE FROM tmp; SELECT count(*) FROM result;
+INSERT INTO result SELECT * FROM tmp;
+DELETE FROM tmp;
+SELECT count(*) FROM result;
 
 query rowsort +explain:o
 -- 2nd neighbor

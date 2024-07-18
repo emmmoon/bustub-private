@@ -669,7 +669,7 @@ auto Optimizer::OptimizeSeqToIndexScan(const AbstractPlanNodeRef &plan) -> Abstr
           throw NotImplementedException("only support creating index with exactly one or two columns");
         }
         for (size_t idx = 0; idx < col_idxs.size(); ++idx) {
-          if (range_begin[idx].GetAs<int>() > range_end[idx].GetAs<int>()) {
+          if (range_begin[idx].GetAs<int>() > range_end[idx].GetAs<int>() - 1) {
             std::vector<Column> void_columns{};
             auto void_schema_ref = std::make_shared<const Schema>(void_columns);
             std::vector<std::vector<AbstractExpressionRef>> void_exprs;
@@ -743,7 +743,7 @@ auto Optimizer::PickOutRangeFromExpr(const AbstractExpressionRef &expr, std::vec
           switch (comparison_expr->comp_type_) {
             case ComparisonType::Equal: {
               range_begin.emplace_back(constant_expr->val_);
-              range_end.emplace_back(constant_expr->val_);
+              range_end.emplace_back(constant_expr->val_.Add(ValueFactory::GetIntegerValue(1)));
               break;
             }
             case ComparisonType::GreaterThan: {
@@ -758,12 +758,12 @@ auto Optimizer::PickOutRangeFromExpr(const AbstractExpressionRef &expr, std::vec
             }
             case ComparisonType::LessThan: {
               range_begin.emplace_back(ValueFactory::GetIntegerValue(BUSTUB_INT32_MIN));
-              range_end.emplace_back(constant_expr->val_.Add(ValueFactory::GetIntegerValue(-1)));
+              range_end.emplace_back(constant_expr->val_);
               break;
             }
             case ComparisonType::LessThanOrEqual: {
               range_begin.emplace_back(ValueFactory::GetIntegerValue(BUSTUB_INT32_MIN));
-              range_end.emplace_back(constant_expr->val_);
+              range_end.emplace_back(constant_expr->val_.Add(ValueFactory::GetIntegerValue(1)));
               break;
             }
             default:
@@ -775,13 +775,13 @@ auto Optimizer::PickOutRangeFromExpr(const AbstractExpressionRef &expr, std::vec
           switch (comparison_expr->comp_type_) {
             case ComparisonType::Equal: {
               auto equal_num = constant_expr->val_.GetAs<int>();
-              if (equal_num > range_end[idx].GetAs<int>()) {
+              if (equal_num > range_end[idx].GetAs<int>() - 1) {
                 range_begin[idx] = ValueFactory::GetIntegerValue(equal_num);
               } else if (equal_num < range_begin[idx].GetAs<int>()) {
-                range_end[idx] = ValueFactory::GetIntegerValue(equal_num);
+                range_end[idx] = ValueFactory::GetIntegerValue(equal_num + 1);
               } else {
                 range_begin[idx] = ValueFactory::GetIntegerValue(equal_num);
-                range_end[idx] = ValueFactory::GetIntegerValue(equal_num);
+                range_end[idx] = ValueFactory::GetIntegerValue(equal_num + 1);
               }
               break;
             }
@@ -794,11 +794,11 @@ auto Optimizer::PickOutRangeFromExpr(const AbstractExpressionRef &expr, std::vec
               break;
             }
             case ComparisonType::LessThan: {
-              range_end[idx] = constant_expr->val_.Add(ValueFactory::GetIntegerValue(-1));
+              range_end[idx] = constant_expr->val_;
               break;
             }
             case ComparisonType::LessThanOrEqual: {
-              range_end[idx] = constant_expr->val_;
+              range_end[idx] = constant_expr->val_.Add(ValueFactory::GetIntegerValue(1));
               break;
             }
             default:

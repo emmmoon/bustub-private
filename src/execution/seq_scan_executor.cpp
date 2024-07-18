@@ -25,6 +25,7 @@ void SeqScanExecutor::Init() {
   txn_ = exec_ctx_->GetTransaction();
   ctx_is_deleted_ = exec_ctx_->IsDelete();
   oid_ = plan_->GetTableOid();
+  out_ = false;
   auto old_lock_mode = lock_mgr_->IsTableLocked(txn_, oid_);
   if (old_lock_mode.has_value()) {
     if (old_lock_mode.value() == LockManager::LockMode::INTENTION_EXCLUSIVE ||

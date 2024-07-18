@@ -384,6 +384,7 @@ auto main(int argc, char **argv) -> int {
       auto txn = bustub->txn_manager_->Begin(nullptr, bustub::IsolationLevel::REPEATABLE_READ);
       bool txn_success = true;
 
+
       std::string query = "SELECT * FROM nft";
       if (!bustub->ExecuteSqlTxn(query, writer, txn)) {
         txn_success = false;
